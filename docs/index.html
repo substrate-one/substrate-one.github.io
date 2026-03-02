@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shingane AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar h1 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: #ecf0f1;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .sidebar nav ul {
+            list-style: none;
+        }
+
+        .sidebar nav ul li {
+            margin-bottom: 10px;
+        }
+
+        .sidebar nav ul li a {
+            color: #ecf0f1;
+            text-decoration: none;
+            display: block;
+            padding: 12px 15px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .sidebar nav ul li a:hover {
+            background-color: #34495e;
+            padding-left: 20px;
+        }
+
+        .sidebar nav ul li a.active {
+            background-color: #3498db;
+            font-weight: bold;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            flex: 1;
+            padding: 40px;
+            max-width: 1200px;
+        }
+
+        .content-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            line-height: 1.6;
+        }
+
+        .content-container h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .content-container h2 {
+            color: #34495e;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .content-container h3 {
+            color: #7f8c8d;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .content-container p {
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        .content-container ul, .content-container ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+
+        .content-container li {
+            margin-bottom: 8px;
+        }
+
+        .content-container a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .content-container a:hover {
+            text-decoration: underline;
+        }
+
+        .content-container code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .content-container pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+        }
+
+        .content-container pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .content-container blockquote {
+            border-left: 4px solid #3498db;
+            padding-left: 20px;
+            margin: 20px 0;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .content-container img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px 0;
+        }
+
+        .content-container table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .content-container table th,
+        .content-container table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .content-container table th {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .content-container table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-size: 18px;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #e74c3c;
+            font-size: 18px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <h1>Shingane AI</h1>
+        <nav>
+            <ul>
+                <li><a href="#home" data-page="home" class="nav-link active">Home</a></li>
+                <li><a href="#updates" data-page="updates" class="nav-link">Updates</a></li>
+                <li><a href="#onboarding" data-page="onboarding" class="nav-link">Onboarding</a></li>
+                <li><a href="#our-culture" data-page="our-culture" class="nav-link">Our Culture</a></li>
+                <li><a href="#why-we-are-here" data-page="why-we-are-here" class="nav-link">Why We Are Here</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <div id="content" class="content-container">
+            <div class="loading">Loading...</div>
+        </div>
+    </main>
+
+    <script>
+        // Configure marked options
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
+
+        // Map of page IDs to markdown file paths
+        const pageMap = {
+            'home': '../README.md',
+            'updates': 'updates.md',
+            'onboarding': 'onboarding.md',
+            'our-culture': 'our-culture.md',
+            'why-we-are-here': 'why-we-are-here.md'
+        };
+
+        // Function to load and render markdown content
+        async function loadPage(page) {
+            const contentDiv = document.getElementById('content');
+            contentDiv.innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                const filePath = pageMap[page];
+                const response = await fetch(filePath);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load ${filePath}`);
+                }
+
+                const markdown = await response.text();
+                const html = marked.parse(markdown);
+                contentDiv.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading page:', error);
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <h2>Content Not Available</h2>
+                        <p>The requested content could not be loaded. It may not exist yet.</p>
+                        <p><small>Page: ${page}</small></p>
+                    </div>
+                `;
+            }
+        }
+
+        // Function to update active nav link
+        function updateActiveLink(page) {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.page === page) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        // Handle navigation clicks
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = e.target.dataset.page;
+                window.location.hash = page;
+                updateActiveLink(page);
+                loadPage(page);
+            });
+        });
+
+        // Handle browser back/forward
+        window.addEventListener('hashchange', () => {
+            const page = window.location.hash.slice(1) || 'home';
+            updateActiveLink(page);
+            loadPage(page);
+        });
+
+        // Load initial page
+        const initialPage = window.location.hash.slice(1) || 'home';
+        updateActiveLink(initialPage);
+        loadPage(initialPage);
+    </script>
+</body>
+</html>
