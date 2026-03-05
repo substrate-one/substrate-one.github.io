@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Substrate One</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         * {
@@ -193,6 +194,70 @@
             font-size: 18px;
         }
 
+        .auth-gate {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            flex-direction: column;
+            gap: 24px;
+            padding: 20px;
+        }
+
+        .auth-gate h1 {
+            color: white;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .auth-gate p {
+            color: rgba(255,255,255,0.9);
+            font-size: 16px;
+            margin-bottom: 24px;
+        }
+
+        .auth-gate .allowed-domain {
+            font-size: 14px;
+            color: rgba(255,255,255,0.7);
+        }
+
+        #google-signin-btn {
+            min-width: 240px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-gate.hidden { display: none; }
+
+        .app-container { display: flex; min-height: 100vh; }
+        .app-container.hidden { display: none; }
+
+        .sidebar .user-info {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid #34495e;
+            font-size: 13px;
+            color: #bdc3c7;
+        }
+
+        .sidebar .sign-out-btn {
+            display: block;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .sidebar .sign-out-btn:hover { background: #c0392b; }
+
         @media (max-width: 768px) {
             .sidebar {
                 width: 100%;
@@ -207,7 +272,16 @@
     </style>
 </head>
 <body>
-    hello world
+    <!-- Auth gate: shown until signed in with allowed Workspace domain -->
+    <div id="auth-gate" class="auth-gate">
+        <h1>Substrate One</h1>
+        <p>Sign in with your company account to continue.</p>
+        <p class="allowed-domain" id="allowed-domain-msg"></p>
+        <div id="google-signin-btn"></div>
+        <p id="auth-error" style="color: #fadbd8; font-size: 14px; display: none;"></p>
+    </div>
+
+    <div id="app-container" class="app-container hidden" style="display: none !important;">
     <aside class="sidebar">
         <h1>Substrate One</h1>
         <nav>
@@ -219,6 +293,10 @@
                 <li><a href="#why-we-are-here" data-page="why-we-are-here" class="nav-link">Why We Are Here</a></li>
             </ul>
         </nav>
+        <div class="user-info">
+            <span id="user-email"></span>
+            <button type="button" class="sign-out-btn" id="sign-out-btn">Sign out</button>
+        </div>
     </aside>
 
     <main class="main-content">
@@ -226,8 +304,106 @@
             <div class="loading">Loading...</div>
         </div>
     </main>
+    </div><!-- /#app-container -->
 
     <script>
+        // --- Google Workspace auth ---
+        // Get Client ID: Google Cloud Console → APIs & Services → Credentials → Create OAuth 2.0 Client ID (Web).
+        // Add Authorized JavaScript origins: https://substrate-one.github.io (and http://localhost:PORT for local dev).
+        const GOOGLE_CLIENT_ID = '378412121430-o569bt5i7pgtei6ajgbbvhdr34bnul88.apps.googleusercontent.com';
+        const WORKSPACE_DOMAIN = 'substrateone.com';  // only @substrateone.com can sign in
+
+        const authGate = document.getElementById('auth-gate');
+        const appContainer = document.getElementById('app-container');
+        const authError = document.getElementById('auth-error');
+        const allowedDomainMsg = document.getElementById('allowed-domain-msg');
+
+        function showApp(user) {
+            document.getElementById('user-email').textContent = user.email;
+            authGate.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+            appContainer.style.display = '';
+            appContainer.style.setProperty('display', 'flex', 'important');
+            authError.style.display = 'none';
+        }
+
+        function showAuthGate(msg) {
+            appContainer.classList.add('hidden');
+            appContainer.style.display = 'none';
+            appContainer.style.setProperty('display', 'none', 'important');
+            authGate.classList.remove('hidden');
+            authError.textContent = msg || ''; authError.style.display = msg ? 'block' : 'none';
+        }
+
+        function initGoogleSignIn() {
+            allowedDomainMsg.textContent = 'Allowed: @' + WORKSPACE_DOMAIN;
+            if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.startsWith('YOUR_')) {
+                showAuthGate('Google sign-in is not configured. Set GOOGLE_CLIENT_ID in the page.');
+                return;
+            }
+            var btnEl = document.getElementById('google-signin-btn');
+            try {
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    auto_select: false,
+                    callback: function (res) {
+                        const payload = JSON.parse(atob(res.credential.split('.')[1]));
+                        const email = payload.email;
+                        const hd = payload.hd || '';
+                        if (hd.toLowerCase() !== WORKSPACE_DOMAIN.toLowerCase()) {
+                            showAuthGate('Access denied. Please use a @' + WORKSPACE_DOMAIN + ' account.');
+                            google.accounts.id.disableAutoSelect();
+                            return;
+                        }
+                        showApp({ email: email });
+                        if (window.loadPage) {
+                            const page = window.location.hash.slice(1) || 'home';
+                            window.updateActiveLink && window.updateActiveLink(page);
+                            window.loadPage(page);
+                        }
+                    }
+                });
+                google.accounts.id.renderButton(btnEl, {
+                    type: 'standard',
+                    theme: 'filled_black',
+                    size: 'large',
+                    text: 'signin_with',
+                    shape: 'rectangular'
+                });
+            } catch (e) {
+                authError.textContent = 'Google button error: ' + (e.message || e);
+                authError.style.display = 'block';
+                console.error('Google Sign-In render error', e);
+            }
+        }
+
+        document.getElementById('sign-out-btn').addEventListener('click', function () {
+            google.accounts.id.disableAutoSelect();
+            google.accounts.id.revoke(document.getElementById('user-email').textContent, function () {});
+            showAuthGate();
+            initGoogleSignIn();
+        });
+
+        function tryInitAuth() {
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                initGoogleSignIn();
+                return true;
+            }
+            return false;
+        }
+        if (!tryInitAuth()) {
+            window.addEventListener('load', function () {
+                if (!tryInitAuth()) {
+                    authError.textContent = 'Google sign-in failed to load. Check the console or try again.';
+                    authError.style.display = 'block';
+                }
+            });
+            var checkGoogle = setInterval(function () {
+                if (tryInitAuth()) clearInterval(checkGoogle);
+            }, 100);
+            setTimeout(function () { clearInterval(checkGoogle); }, 10000);
+        }
+
         // Configure marked options
         marked.setOptions({
             breaks: true,
@@ -271,6 +447,8 @@
             }
         }
 
+        window.loadPage = loadPage;
+
         // Function to update active nav link
         function updateActiveLink(page) {
             document.querySelectorAll('.nav-link').forEach(link => {
@@ -280,6 +458,7 @@
                 }
             });
         }
+        window.updateActiveLink = updateActiveLink;
 
         // Handle navigation clicks
         document.querySelectorAll('.nav-link').forEach(link => {
@@ -299,7 +478,7 @@
             loadPage(page);
         });
 
-        // Load initial page
+        // Load initial page (only after auth will content be visible; this runs for when app is shown)
         const initialPage = window.location.hash.slice(1) || 'home';
         updateActiveLink(initialPage);
         loadPage(initialPage);
